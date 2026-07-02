@@ -2,6 +2,7 @@ package ar.edu.ba.utn.ddsi.ClimaAlerta.services.impl;
 
 import ar.edu.ba.utn.ddsi.ClimaAlerta.models.dto.external.weatherapi.WeatherResponse;
 import ar.edu.ba.utn.ddsi.ClimaAlerta.models.entities.Clima;
+import ar.edu.ba.utn.ddsi.ClimaAlerta.models.entities.Ubicacion;
 import ar.edu.ba.utn.ddsi.ClimaAlerta.models.repositories.IClimaRepository;
 import ar.edu.ba.utn.ddsi.ClimaAlerta.services.IClimaService;
 import org.slf4j.Logger;
@@ -12,12 +13,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.List;
+
 @Service
 public class ClimaService implements IClimaService {
 
     private static final Logger logger = LoggerFactory.getLogger(ClimaService.class);
     private static final String[] CIUDADES_ARGENTINA = {
-            "Buenos Aires","Cordoba","Rosario","La Pampa"
+            "Buenos Aires","Cordoba","Rosario","La Pampa, argentina"
     };
 
     private final IClimaRepository climaRepository;
@@ -36,19 +40,25 @@ public class ClimaService implements IClimaService {
     }
 
     @Override
-    public Mono<Void> actualizarClimaCiudades() {
+    public Mono<List<Ubicacion>> actualizarClimaCiudades() {
         return Flux.fromArray(CIUDADES_ARGENTINA)
                 .flatMap(this::obtenerClimaDeApi)
-                .flatMap(clima->{
-                    climaRepository.save(clima);
-                    logger.info("Clima actualizado para: {}\nla temperatura en grados C es de {}", clima.getCiudad(),clima.getTempC());
-                    return Mono.empty();
+                .flatMap(clima -> {
+                    Clima climaGuardado = climaRepository.save(clima);
+
+                    logger.info(
+                            "Clima actualizado para: {}\nLa temperatura en grados C es de {}",
+                            climaGuardado.getUbicacion().getCiudad(),
+                            climaGuardado.getTempC()
+                    );
+
+                    return Mono.just(climaGuardado.getUbicacion());
                 })
-                .onErrorResume(e ->{
-                    logger.error("Error al actualizar Clima: {}", e.getMessage());
-                    return Mono.empty();
-                })
-                .then();
+                .collectList()
+                .onErrorResume(e -> {
+                    logger.error("Error al actualizar clima: {}", e.getMessage());
+                    return Mono.just(Collections.emptyList());
+                });
     }
 
     private Mono<Clima> obtenerClimaDeApi(String ciudad){
@@ -63,9 +73,11 @@ public class ClimaService implements IClimaService {
                 .bodyToMono(WeatherResponse.class)
                 .map(response-> {
                     Clima clima = new Clima();
-                    clima.setCiudad(ciudad);
-                    clima.setRegion(response.getLocation().getRegion());
-                    clima.setPais(response.getLocation().getCountry());
+                    Ubicacion ubicacion = new Ubicacion();
+                    ubicacion.setCiudad(ciudad);
+                    ubicacion.setRegion(response.getLocation().getRegion());
+                    ubicacion.setPais(response.getLocation().getCountry());
+                    clima.setUbicacion(ubicacion);
                     clima.setTempC(response.getCurrent().getTemp_c());
                     clima.setTempF(response.getCurrent().getTemp_f());
                     clima.setCondicion(response.getCurrent().getCondition().getText());

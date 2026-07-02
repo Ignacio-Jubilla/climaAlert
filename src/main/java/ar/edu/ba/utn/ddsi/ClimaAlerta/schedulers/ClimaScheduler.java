@@ -17,7 +17,7 @@ public class ClimaScheduler {
     public void actualizarClima(){
         climaService.actualizarClimaCiudades()
                 .doOnSuccess(v->logger.info("Actualizacion de {} completada",v))
-                .doOnError(e->logger.error("Error en la actualizacion del clima: ",e.getMessage()))
+                .doOnError(e->logger.error("Error en la actualizacion del clima: ",e))
                 .subscribe();
     }
 

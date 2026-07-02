@@ -7,9 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class Clima {
     private Long id;
-    private String ciudad;
-    private String region;
-    private String pais;
+    private Ubicacion ubicacion;
     private Double tempC;
     private Double tempF;
     private String condicion;

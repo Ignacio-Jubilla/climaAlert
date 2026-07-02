@@ -22,7 +22,7 @@ public class ClimaRepository implements IClimaRepository {
             Long id= idGenerator.getAndIncrement();
             clima.setId(id);
             climas.put(id,clima);
-            ciudadToId.put(clima.getCiudad(),id);
+            ciudadToId.put(clima.getUbicacion().getCiudad(),id);
         }else{
             climas.put(clima.getId(),clima);
         }

@@ -39,4 +39,10 @@ public class EmailRepository implements IEmailRepository {
                 .filter(email -> email.isEnviado()==enviado)
                 .toList();
     }
+
+    public List<Email> findByAlerta(Long alertaId) {
+        return emails.values().stream()
+                .filter(x -> x.getAlerta().getIdAlerta().equals(alertaId))
+                .toList();
+    }
 }
